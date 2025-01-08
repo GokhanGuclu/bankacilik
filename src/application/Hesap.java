@@ -4,15 +4,22 @@ public class Hesap {
     private String sube;
     private String hesapNo;
     private String iban;
-    private String bakiye;
+    private double bakiye;
 
-    public Hesap(String sube, String hesapNo, String iban, String bakiye) {
+    // Constructor
+    public Hesap(String sube, String hesapNo, String iban, double bakiye) { 
         this.sube = sube;
         this.hesapNo = hesapNo;
         this.iban = iban;
-        this.bakiye = bakiye;
+        this.bakiye = bakiye; 
     }
+    
+   public Hesap(String hesapNo, double bakiye) {
+	   this.hesapNo = hesapNo;
+	   this.bakiye = bakiye;
+   }
 
+    // Getter ve Setter
     public String getSube() {
         return sube;
     }
@@ -37,11 +44,11 @@ public class Hesap {
         this.iban = iban;
     }
 
-    public String getBakiye() {
+    public double getBakiye() { 
         return bakiye;
     }
 
-    public void setBakiye(String bakiye) {
+    public void setBakiye(double bakiye) { 
         this.bakiye = bakiye;
     }
 }

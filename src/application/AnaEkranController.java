@@ -9,8 +9,15 @@ import javafx.fxml.FXMLLoader;
 import javafx.scene.Scene;
 import javafx.stage.Stage;
 import javafx.scene.chart.PieChart;
+import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
+import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
+import javafx.concurrent.Task;
+import javafx.event.ActionEvent;
+import javafx.scene.Node;
+import javafx.scene.Parent;	
 import org.json.JSONObject;
 
 import java.sql.Connection;
@@ -73,6 +80,25 @@ public class AnaEkranController {
     @FXML
     private VBox veriBox;
     
+    @FXML
+    private Button faizIslemleriButton;
+    
+    @FXML
+    private void faizIslemleriAc() {
+        try {
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/tasarim/faiz.fxml"));
+            Parent root = loader.load();
+
+            Stage stage = new Stage();
+            stage.setTitle("Faiz İşlemleri");
+            stage.setScene(new Scene(root));
+            stage.show();
+        } catch (IOException ex) {
+            ex.printStackTrace();
+        }
+    }
+
+    
     private final String API_KEY = "1e695f9b72f13badc3cb6dec";
     private final String API_URL = "https://v6.exchangerate-api.com/v6/" + API_KEY + "/latest/TRY";
 
@@ -90,7 +116,7 @@ public class AnaEkranController {
         return currentUser;
     }
 
-    private int kullaniciId;
+    public static int kullaniciId;
    
 
     public void setKullaniciId(int id) {
@@ -132,7 +158,7 @@ public class AnaEkranController {
                         rs.getString("hesap_subesi"),
                         rs.getString("hesap_no"),
                         rs.getString("iban"),
-                        rs.getString("bakiye")
+                        rs.getDouble("bakiye")
                 ));
             }
             if (!hesapListesi.isEmpty()) {
@@ -155,6 +181,10 @@ public class AnaEkranController {
     public void initialize() {    	
         paraTransferButton.setOnAction(e -> {
             openParaTransferiWindow(kullaniciId);
+        });
+        
+        faizIslemleriButton.setOnAction(e -> {
+            faizIslemleriAc();
         });
         
         hesapHareketButton.setOnAction(e -> {
@@ -240,10 +270,10 @@ public class AnaEkranController {
             
             pieChartVerileriniYukle();	
 
-            boolean veriVarMi = false; // Veri kontrolü
+            boolean veriVarMi = false;
 
             while (rs.next()) {
-                veriVarMi = true; // Veri bulunduğunu işaretle
+                veriVarMi = true;
 
                 String hesapTuru = rs.getString("hesap_turu");
                 double toplamBakiye = rs.getDouble("toplam_bakiye");
@@ -255,13 +285,11 @@ public class AnaEkranController {
                 }
             }
 
-            // Eğer veri yoksa varsayılan değer ata
             if (!veriVarMi) {
                 vadesizLabel.setText("0.00 TL");
                 vadeliLabel.setText("0.00 TL");
                 tumHesaplarLabel.setText("0.00 TL");
             } else {
-                // Tüm hesapların toplamını tekrar sorgulayıp hesapla
                 String toplamQuery = "SELECT SUM(bakiye) AS genel_toplam FROM hesaplar WHERE kullanici_id = ?";
                 try (PreparedStatement stmt2 = conn.prepareStatement(toplamQuery)) {
                     stmt2.setInt(1, kullaniciId);
@@ -301,7 +329,6 @@ public class AnaEkranController {
                 }
             }
 
-            // PieChart verilerini ekleyelim
             ObservableList<PieChart.Data> pieChartData = FXCollections.observableArrayList(
                     new PieChart.Data("Vadeli", vadeliToplam),
                     new PieChart.Data("Vadesiz", vadesizToplam)
@@ -309,15 +336,13 @@ public class AnaEkranController {
 
             pieChart.setData(pieChartData);
 
-            // Legend'ı kaldır
             pieChart.setLegendVisible(false);
 
-            // Renkleri özelleştir
             for (PieChart.Data data : pieChart.getData()) {
                 if (data.getName().equals("Vadeli")) {
-                    data.getNode().setStyle("-fx-pie-color: #FFFF00;"); // Turuncu
+                    data.getNode().setStyle("-fx-pie-color: #FFFF00;"); 
                 } else if (data.getName().equals("Vadesiz")) {
-                    data.getNode().setStyle("-fx-pie-color: #007FFF;"); // Mavi
+                    data.getNode().setStyle("-fx-pie-color: #007FFF;");
                 }
             }
 
@@ -327,112 +352,91 @@ public class AnaEkranController {
     }
     
     private void verileriYukle() {
-        try {
-            // --- DÖVİZ KURLARI İÇİN API BAĞLANTISI ---
-            URL url = new URL(API_URL);
-            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-            conn.setRequestMethod("GET");
-            conn.connect();
+        Task<Void> task = new Task<>() {
+            @Override
+            protected Void call() throws Exception {
+                try {
+                    URL url = new URL(API_URL);
+                    HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+                    conn.setRequestMethod("GET");
+                    conn.connect();
 
-            // Yanıt kodunu kontrol et
-            int responseCode = conn.getResponseCode();
-            if (responseCode != 200) {
-                throw new RuntimeException("HTTP Hatası: " + responseCode);
+                    int responseCode = conn.getResponseCode();
+                    if (responseCode != 200) {
+                        throw new RuntimeException("HTTP Hatası: " + responseCode);
+                    }
+
+                    BufferedReader reader = new BufferedReader(new InputStreamReader(conn.getInputStream()));
+                    StringBuilder jsonResponse = new StringBuilder();
+                    String line;
+                    while ((line = reader.readLine()) != null) {
+                        jsonResponse.append(line);
+                    }
+                    reader.close();
+
+                    JSONObject data = new JSONObject(jsonResponse.toString());
+                    JSONObject rates = data.getJSONObject("conversion_rates");
+
+                    double dolarAlis = 1 / rates.getDouble("USD");
+                    double dolarSatis = dolarAlis * 1.05;
+                    double euroAlis = 1 / rates.getDouble("EUR");
+                    double euroSatis = euroAlis * 1.05;
+                    double sterlinAlis = 1 / rates.getDouble("GBP");
+                    double sterlinSatis = sterlinAlis * 1.05;
+                    double cadAlis = 1 / rates.getDouble("CAD");
+                    double cadSatis = cadAlis * 1.05;
+                    double chfAlis = 1 / rates.getDouble("CHF");
+                    double chfSatis = chfAlis * 1.05;
+
+                    Platform.runLater(() -> {
+                        veriBox.getChildren().clear();
+                        veriBox.getChildren().add(createTableHeader());
+                        veriBox.getChildren().add(createTableRow("USD", "flags/us.png", dolarAlis, dolarSatis));
+                        veriBox.getChildren().add(createTableRow("EUR", "flags/eu.png", euroAlis, euroSatis));
+                        veriBox.getChildren().add(createTableRow("GBP", "flags/gb.png", sterlinAlis, sterlinSatis));
+                        veriBox.getChildren().add(createTableRow("CHF", "flags/ch.png", chfAlis, chfSatis));
+                        veriBox.getChildren().add(createTableRow("CAD", "flags/ca.png", cadAlis, cadSatis));
+                    });
+
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    Platform.runLater(() -> veriBox.getChildren().add(new Label("Veriler yüklenemedi!")));
+                }
+                return null;
             }
+        };
 
-            // API yanıtını oku
-            BufferedReader reader = new BufferedReader(new InputStreamReader(conn.getInputStream()));
-            StringBuilder jsonResponse = new StringBuilder();
-            String line;
-            while ((line = reader.readLine()) != null) {
-                jsonResponse.append(line);
-            }
-            reader.close();
-
-            // JSON verisini işle
-            JSONObject data = new JSONObject(jsonResponse.toString());
-            JSONObject rates = data.getJSONObject("conversion_rates");
-
-            // Döviz kurlarını al
-            double dolarAlis = 1 / rates.getDouble("USD");
-            double dolarSatis = dolarAlis * 1.05; // %5 kar oranı
-            double euroAlis = 1 / rates.getDouble("EUR");
-            double euroSatis = euroAlis * 1.05;
-            double sterlinAlis = 1 / rates.getDouble("GBP");
-            double sterlinSatis = sterlinAlis * 1.05;
-
-            // --- ALTIN FİYATLARI İÇİN API BAĞLANTISI ---
-            String goldApiUrl = "https://www.goldapi.io/api/XAU/USD";
-            HttpURLConnection goldConn = (HttpURLConnection) new URL(goldApiUrl).openConnection();
-            goldConn.setRequestMethod("GET");
-
-            // API başlıklarını ekle
-            goldConn.setRequestProperty("x-access-token", "goldapi-5hzhesm5jn34jj-io");
-            goldConn.setRequestProperty("Content-Type", "application/json");
-            goldConn.connect();
-
-            // Altın API yanıtını oku
-            BufferedReader goldReader = new BufferedReader(new InputStreamReader(goldConn.getInputStream()));
-            StringBuilder goldResponse = new StringBuilder();
-            while ((line = goldReader.readLine()) != null) {
-                goldResponse.append(line);
-            }
-            goldReader.close();
-
-            // Altın verilerini işle
-            JSONObject goldData = new JSONObject(goldResponse.toString());
-            double altinUsd = goldData.getDouble("price");
-
-            double altinAlis = altinUsd * dolarAlis;
-            double altinSatis = altinAlis * 1.05;
-
-            // --- VBox içine verileri ekleyelim ---
-            veriBox.getChildren().clear();
-            veriBox.setSpacing(15);
-            veriBox.setStyle("-fx-background-color: #f4f4f4; -fx-padding: 20; -fx-border-color: #ddd; -fx-border-radius: 10;");
-
-            veriBox.getChildren().add(createInfoBox("USD", dolarAlis, dolarSatis));
-            veriBox.getChildren().add(createInfoBox("EUR", euroAlis, euroSatis));
-            veriBox.getChildren().add(createInfoBox("GBP", sterlinAlis, sterlinSatis));
-            veriBox.getChildren().add(createInfoBox("ALTIN", altinAlis, altinSatis));
-
-        } catch (java.net.UnknownHostException e) {
-            veriBox.getChildren().add(new Label("Bağlantı hatası: Lütfen internet bağlantınızı kontrol edin."));
-        } catch (Exception e) {
-            e.printStackTrace();
-            veriBox.getChildren().add(new Label("Veriler yüklenemedi!"));
-        }
+        new Thread(task).start();
     }
 
-    private HBox createInfoBox(String label, double alis, double satis) {
-        HBox box = new HBox();
-        box.setSpacing(20);
-        box.setStyle("-fx-padding: 20; -fx-background-color: #ffffff; -fx-border-color: #ddd; -fx-border-radius: 10; -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.1), 5, 0, 0, 2);");
+    private HBox createTableHeader() {
+        HBox header = new HBox(15);
+        header.setStyle("-fx-padding: 10; -fx-background-color: #f0f0f0; -fx-font-weight: bold;");
+        header.getChildren().addAll(new Label("Para Birimi"), new Label("Alış"), new Label("Satış"));
+        return header;
+    }
 
-        VBox content = new VBox();
+    private HBox createTableRow(String label, String flagPath, double alis, double satis) {
+        HBox row = new HBox(15);
+        row.setStyle("-fx-padding: 10; -fx-background-color: #ffffff; -fx-border-color: #e0e0e0; -fx-border-radius: 5;");
+
+        ImageView flag = new ImageView(new Image(flagPath));
+        flag.setFitHeight(20);
+        flag.setFitWidth(30);
+
         Label lbl = new Label(label);
-        lbl.setStyle("-fx-font-weight: bold; -fx-font-size: 16px;");
+        lbl.setStyle("-fx-font-weight: bold; -fx-font-size: 14px;");
 
-        HBox alisBox = new HBox();
-        Label alisLbl = new Label("Alış:");
-        alisLbl.setStyle("-fx-font-size: 14px; -fx-font-weight: bold;");
-        Label alisVal = new Label("₺" + String.format("%.4f", alis));
-        alisVal.setStyle("-fx-font-size: 14px;");
-        alisBox.setSpacing(10);
-        alisBox.getChildren().addAll(alisLbl, alisVal);
+        Label alisLbl = new Label(String.format("₺%.4f", alis));
+        alisLbl.setStyle("-fx-font-size: 14px;");
 
-        HBox satisBox = new HBox();
-        Label satisLbl = new Label("Satış:");
-        satisLbl.setStyle("-fx-font-size: 14px; -fx-font-weight: bold;");
-        Label satisVal = new Label("₺" + String.format("%.4f", satis));
-        satisVal.setStyle("-fx-font-size: 14px;");
-        satisBox.setSpacing(10);
-        satisBox.getChildren().addAll(satisLbl, satisVal);
+        Label satisLbl = new Label(String.format("₺%.4f", satis));
+        satisLbl.setStyle("-fx-font-size: 14px;");
 
-        content.getChildren().addAll(lbl, alisBox, satisBox);
-        box.getChildren().add(content);
-        return box;
+        row.getChildren().addAll(flag, lbl, alisLbl, satisLbl);
+        return row;
     }
+
 }
 
 

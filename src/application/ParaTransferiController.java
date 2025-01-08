@@ -50,7 +50,7 @@ public class ParaTransferiController {
         this.kullaniciId = id;
     }
     
-    private AnaEkranController anaSayfaController; // Referans oluştur
+    private AnaEkranController anaSayfaController; 
 
 	 public void setAnaSayfaController(AnaEkranController controller) {
 	     this.anaSayfaController = controller;
@@ -60,16 +60,15 @@ public class ParaTransferiController {
     public void initialize() {
     	loadAliciList(kullaniciId);
     	
-        // Yeni ve Kayıtlı Seçme Butonlarına İşlev Ekle
         yenisec.setOnAction(e -> {
-            aliciListVBox.getChildren().clear(); // Eski bileşenleri temizle
-            yeniAliciEkle(); // Yeni alıcı ekranını oluştur
+            aliciListVBox.getChildren().clear(); 
+            yeniAliciEkle();
             setupYeniBar();
         });
 
         kayıtlısec.setOnAction(e -> {
-            aliciListVBox.getChildren().clear(); // Eski bileşenleri temizle
-            loadAliciList(kullaniciId); // Kayıtlı alıcıları yükle
+            aliciListVBox.getChildren().clear(); 
+            loadAliciList(kullaniciId);
             setupKayıtlıBar();
         });
     }
@@ -315,9 +314,8 @@ public class ParaTransferiController {
 
         try {
             conn = databaseconnection.connect();
-            conn.setAutoCommit(false); // İşlemleri atomik yapmak için otomatik commit'i kapatıyoruz.
+            conn.setAutoCommit(false);
 
-            // Gönderen IBAN'ın mevcut bakiyesini kontrol et
             double gonderenBakiye = 0;
             String bakiyeSorgu = "SELECT bakiye FROM hesaplar WHERE iban = ?";
             stmt = conn.prepareStatement(bakiyeSorgu);
@@ -328,18 +326,16 @@ public class ParaTransferiController {
                 gonderenBakiye = rs.getDouble("bakiye");
             } else {
                 System.out.println("Gönderen IBAN bulunamadı!");
-                conn.rollback(); // İşlemi geri al
+                conn.rollback(); 
                 return;
             }
 
-            // Yeterli bakiye kontrolü
             if (gonderenBakiye < tutar) {
                 System.out.println("Yetersiz bakiye!");
                 conn.rollback();
                 return;
             }
 
-            // Alıcı IBAN'ın mevcut bakiyesini kontrol et
             double aliciBakiye = 0;
             stmt = conn.prepareStatement(bakiyeSorgu);
             stmt.setString(1, selectedIban);
@@ -349,11 +345,10 @@ public class ParaTransferiController {
                 aliciBakiye = rs.getDouble("bakiye");
             } else {
                 System.out.println("Alıcı IBAN bulunamadı!");
-                conn.rollback(); // İşlemi geri al
+                conn.rollback();
                 return;
             }
 
-            // Gönderenin bakiyesini düşür
             String gonderenGuncelle = "UPDATE hesaplar SET bakiye = bakiye - ? WHERE iban = ?";
             stmt = conn.prepareStatement(gonderenGuncelle);
             stmt.setDouble(1, tutar);
@@ -362,11 +357,10 @@ public class ParaTransferiController {
 
             if (gonderenUpdate <= 0) {
                 System.out.println("Gönderen hesabın bakiyesi güncellenemedi!");
-                conn.rollback(); // İşlemi geri al
+                conn.rollback();
                 return;
             }
 
-            // Alıcının bakiyesini arttır
             String aliciGuncelle = "UPDATE hesaplar SET bakiye = bakiye + ? WHERE iban = ?";
             stmt = conn.prepareStatement(aliciGuncelle);
             stmt.setDouble(1, tutar);
@@ -375,11 +369,10 @@ public class ParaTransferiController {
 
             if (aliciUpdate <= 0) {
                 System.out.println("Alıcı hesabın bakiyesi güncellenemedi!");
-                conn.rollback(); // İşlemi geri al
+                conn.rollback();
                 return;
             }
 
-            // İşlemi hesap_islemleri tablosuna ekle
             String islemEkle = "INSERT INTO hesap_islemleri (gonderen_iban, alici_iban, miktar, aciklama, odeme_turu) VALUES (?, ?, ?, ?, ?)";
             stmt = conn.prepareStatement(islemEkle);
             stmt.setString(1, gonderenIban);
@@ -391,26 +384,23 @@ public class ParaTransferiController {
 
             if (islemEkleSonuc <= 0) {
                 System.out.println("İşlem kaydedilemedi!");
-                conn.rollback(); // İşlemi geri al
+                conn.rollback();
                 return;
             }
 
-            // Tüm işlemleri onayla
             conn.commit();
             System.out.println("İşlem başarıyla kaydedildi!");
             
             
-
-            // Sayfayı kapat
             javafx.application.Platform.runLater(() -> {
-                ((Stage) aliciListVBox.getScene().getWindow()).close(); // JavaFX sahnesini kapatır.
+                ((Stage) aliciListVBox.getScene().getWindow()).close();
             });
 
         } catch (SQLException e) {
             e.printStackTrace();
             try {
                 if (conn != null) {
-                    conn.rollback(); // Hata durumunda işlemleri geri al
+                    conn.rollback(); 
                 }
             } catch (SQLException rollbackEx) {
                 rollbackEx.printStackTrace();
@@ -420,7 +410,7 @@ public class ParaTransferiController {
             try {
                 if (rs != null) rs.close();
                 if (stmt != null) stmt.close();
-                if (conn != null) conn.setAutoCommit(true); // İşlemleri eski haline getir
+                if (conn != null) conn.setAutoCommit(true);
                 if (conn != null) conn.close();
             } catch (SQLException closeEx) {
                 closeEx.printStackTrace();
@@ -467,18 +457,15 @@ public class ParaTransferiController {
         yeniAliciBox.setSpacing(10);
         yeniAliciBox.setStyle("-fx-padding: 20px 0px 0px 20px;");
 
-        // IBAN Giriş Alanı
         TextField ibanField = new TextField();
         ibanField.setPromptText("Yeni IBAN girin");
         ibanField.setPrefWidth(400);
         ibanField.setPrefHeight(40);
         ibanField.setStyle("-fx-font-size: 16px; -fx-padding: 10px; -fx-border-color: #cccccc; -fx-border-radius: 5px;");
 
-        // Bilgi Etiketi (Sonuç için)
         Label sonucLabel = new Label();
         sonucLabel.setStyle("-fx-font-size: 14px; -fx-text-fill: #333;");
 
-        // İsim Giriş Alanı
         TextField isimField = new TextField();
         isimField.setPromptText("IBAN Sahibinin İsmini Girin");
         isimField.setPrefWidth(400);
@@ -486,31 +473,27 @@ public class ParaTransferiController {
         isimField.setStyle("-fx-font-size: 16px; -fx-padding: 10px; -fx-border-color: #cccccc; -fx-border-radius: 5px;");
         isimField.setVisible(false);
 
-        // Checkbox ve Başlık Girişi
         CheckBox kaydetCheckbox = new CheckBox("Hesabı Kaydetmek İster misiniz?");
         kaydetCheckbox.setStyle("-fx-font-size: 14px;");
-        kaydetCheckbox.setVisible(false); // Başta gizli
+        kaydetCheckbox.setVisible(false);
         TextField baslikField = new TextField();
         baslikField.setPromptText("Hesap Başlığı Girin");
         baslikField.setPrefWidth(400);
         baslikField.setPrefHeight(40);
         baslikField.setStyle("-fx-font-size: 16px; -fx-padding: 10px; -fx-border-color: #cccccc; -fx-border-radius: 5px;");
-        baslikField.setVisible(false); // Başta gizli
+        baslikField.setVisible(false);
 
-        // Devam Et Butonu
         Button devamEtButton = new Button("Devam Et");
         devamEtButton.setPrefWidth(400);
         devamEtButton.setPrefHeight(40);
         devamEtButton.setStyle("-fx-background-color: #E74C3C; -fx-text-fill: white; -fx-font-size: 16px; -fx-border-radius: 5px;");
         devamEtButton.setVisible(false);
 
-        // Kontrol Et Butonu
         Button kontrolButton = new Button("Kontrol Et");
         kontrolButton.setPrefWidth(400);
         kontrolButton.setPrefHeight(40);
         kontrolButton.setStyle("-fx-background-color: #2ecc71; -fx-text-fill: white; -fx-font-size: 16px; -fx-border-radius: 5px;");
 
-        // Kontrol Et Butonu İşlemi
         kontrolButton.setOnAction(e -> {
             String girilenIban = ibanField.getText().trim();
 
@@ -520,14 +503,13 @@ public class ParaTransferiController {
                 return;
             }
 
-            // IBAN Sahibini Kontrol Et
             String sahibi = getIbanSahibi(girilenIban);
             if (sahibi != null) {
                 sonucLabel.setText("Sahibi: " + maskAdSoyad(sahibi));
                 sonucLabel.setStyle("-fx-text-fill: green;");
                 isimField.setVisible(true);
                 devamEtButton.setVisible(true);
-                kaydetCheckbox.setVisible(true); // Checkbox görünür hale gelir
+                kaydetCheckbox.setVisible(true);
             } else {
                 sonucLabel.setText("Bu IBAN'a ait kullanıcı bulunamadı!");
                 sonucLabel.setStyle("-fx-text-fill: red;");
@@ -537,7 +519,6 @@ public class ParaTransferiController {
             }
         });
 
-        // Checkbox Dinamik Kontrol
         kaydetCheckbox.setOnAction(e -> {
             if (kaydetCheckbox.isSelected()) {
                 baslikField.setVisible(true);
@@ -546,7 +527,6 @@ public class ParaTransferiController {
             }
         });
 
-        // Devam Et Butonu İşlemi
         devamEtButton.setOnAction(e -> {
             String girilenIsim = isimField.getText().trim();
             String dogruIsim = getIbanSahibi(ibanField.getText().trim());
@@ -554,7 +534,6 @@ public class ParaTransferiController {
             if (girilenIsim.equalsIgnoreCase(dogruIsim)) {
                 selectedIban = ibanField.getText().trim();
 
-                // Hesabı Kaydetme İşlemi
                 if (kaydetCheckbox.isSelected()) {
                     String baslik = baslikField.getText().trim();
                     if (!baslik.isEmpty()) {
@@ -562,7 +541,6 @@ public class ParaTransferiController {
                     }
                 }
 
-                // Hesapları Yükle ve Devam Et
                 loadHesapList(kullaniciId);
                 setupAliciNavigationBar();
 
@@ -577,7 +555,6 @@ public class ParaTransferiController {
             }
         });
 
-        // Bileşenleri Ekleyelim
         yeniAliciBox.getChildren().addAll(
             ibanField, kontrolButton, sonucLabel, isimField,
             kaydetCheckbox, baslikField, devamEtButton
@@ -602,16 +579,16 @@ public class ParaTransferiController {
         } catch (SQLException e) {
             e.printStackTrace();
         }
-        return null; // Eğer IBAN bulunamazsa null döndür
+        return null;
     }
     
     private String maskAdSoyad(String adSoyad) {
         String[] parcalar = adSoyad.split(" ");
-        if (parcalar.length == 2) { // Ad ve soyad varsa
+        if (parcalar.length == 2) {
             return parcalar[0].charAt(0) + "*".repeat(parcalar[0].length() - 1) + " " +
                    parcalar[1].charAt(0) + "*".repeat(parcalar[1].length() - 1);
         }
-        return adSoyad; // Geçersiz durumda olduğu gibi döndür
+        return adSoyad;
     }
 
     private void hesapKaydet(String iban, String baslik) {

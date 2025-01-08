@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.TableColumn?>
+<?import javafx.scene.control.TableView?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.layout.AnchorPane?>
+
+<AnchorPane prefHeight="700.0" prefWidth="800.0" style="-fx-background-color: #f8f9fa;" xmlns="http://javafx.com/javafx/23.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="application.FaizController">
+
+   <children>
+      <!-- Başlık -->
+      <Label layoutX="300.0" layoutY="20.0" style="-fx-font-size: 24px; -fx-font-weight: bold;" text="Faiz İşlemleri" />
+
+      <!-- Hesap Tablosu -->
+      <Label layoutX="50.0" layoutY="50.0" text="Vadeli Hesaplar" style="-fx-font-size: 16px; -fx-font-weight: bold;"/>
+      <TableView fx:id="hesapTablosu" layoutX="50.0" layoutY="70.0" prefHeight="150.0" prefWidth="700.0">
+         <columns>
+            <TableColumn fx:id="hesapNoColumn" text="Hesap No" prefWidth="150.0" />
+            <TableColumn fx:id="bakiyeColumn" text="Bakiye (₺)" prefWidth="150.0" />
+         </columns>
+      </TableView>
+
+      <!-- Faize Yatırılan Tutarlar Tablosu -->
+      <Label layoutX="50.0" layoutY="230.0" text="Faize Yatırılan Tutarlar" style="-fx-font-size: 16px; -fx-font-weight: bold;"/>
+      <TableView fx:id="faizTablosu" layoutX="50.0" layoutY="250.0" prefHeight="150.0" prefWidth="700.0">
+         <columns>
+            <TableColumn fx:id="faizHesapNoColumn" text="Hesap No" prefWidth="150.0" />
+            <TableColumn fx:id="faizTutarColumn" text="Yatırılan Tutar (₺)" prefWidth="150.0" />
+            <TableColumn fx:id="faizOraniColumn" text="Faiz Oranı (%)" prefWidth="150.0" />
+            <TableColumn fx:id="faizSureColumn" text="Süre (Yıl)" prefWidth="150.0" />
+            <TableColumn fx:id="faizToplamColumn" text="Toplam Tutar (₺)" prefWidth="150.0" />
+         </columns>
+      </TableView>
+
+      <!-- Hesaplama Alanı -->
+      <Label layoutX="50.0" layoutY="420.0" text="Yatırılacak Tutar:" />
+      <TextField fx:id="yatirTutarField" layoutX="200.0" layoutY="420.0" prefWidth="150.0"/>
+
+      <Label layoutX="50.0" layoutY="460.0" text="Faiz Oranı (%):" />
+      <TextField fx:id="faizOraniField" layoutX="200.0" layoutY="460.0" prefWidth="150.0"/>
+
+      <Label layoutX="50.0" layoutY="500.0" text="Süre (Yıl):" />
+      <TextField fx:id="sureField" layoutX="200.0" layoutY="500.0" prefWidth="150.0"/>
+
+      <Label layoutX="50.0" layoutY="540.0" text="Toplam Tutar:" />
+      <TextField fx:id="toplamTutarField" layoutX="200.0" layoutY="540.0" prefWidth="150.0" editable="false"/>
+
+      <!-- Butonlar -->
+      <Button fx:id="yatirButton" layoutX="50.0" layoutY="580.0" prefWidth="100.0" text="Yatır" />
+      <Button fx:id="hesaplaButton" layoutX="180.0" layoutY="580.0" prefWidth="100.0" text="Hesapla" />
+      <Button fx:id="geriDonButton" layoutX="310.0" layoutY="580.0" prefWidth="100.0" text="Geri Dön" />
+   </children>
+</AnchorPane>

@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.layout.AnchorPane?>
+<?import javafx.scene.image.ImageView?>
+
+<AnchorPane prefHeight="600.0" prefWidth="400.0" style="-fx-background-color: #f4f4f4;" xmlns="http://javafx.com/javafx/23.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="application.HesaplarController">
+   <children>
+      <!-- Başlık -->
+      <Label layoutX="20.0" layoutY="20.0" text="Hesaplarım" style="-fx-font-size: 24px; -fx-font-weight: bold;" />
+      
+      <!-- Hesap Kartı -->
+      <ImageView layoutX="50.0" layoutY="70.0" fitHeight="150.0" fitWidth="300.0" />
+      <Label fx:id="subeLabel" layoutX="50.0" layoutY="230.0" text="ATALAR/İSTANBUL ŞUBESİ" style="-fx-font-size: 18px; -fx-font-weight: bold;" />
+      <Label fx:id="hesapNoLabel" layoutX="50.0" layoutY="260.0" text="2099-102575700-5001" style="-fx-font-size: 14px;" />
+      <Label layoutX="50.0" layoutY="290.0" text="IBAN:" style="-fx-font-weight: bold;" />
+      <Label fx:id="ibanLabel" layoutX="100.0" layoutY="290.0" text="TR71 0001 0009 1025 7570 0050 01" />
+      
+      <!-- İşlem Butonları -->
+      <Button fx:id="paraTransferButton" layoutX="50.0" layoutY="340.0" text="Para Transferi" style="-fx-background-color: #D32F2F; -fx-text-fill: white; -fx-font-weight: bold;" />
+      <Button fx:id="hesapHareketButton" layoutX="200.0" layoutY="340.0" text="Hesap Hareketleri" style="-fx-background-color: #D32F2F; -fx-text-fill: white; -fx-font-weight: bold;" />
+   </children>
+</AnchorPane>
